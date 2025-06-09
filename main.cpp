@@ -1,13 +1,12 @@
-#include <cstddef>
 #include <iostream>
 #include <vector>
 #include <cmath>    // std::floor, std::pow, std::sqrt のため
 #include <random>
-#include <string>
-#include <fstream>  // ファイル出力のため
-#include <iomanip>  // std::fixed, std::setprecision のため
+#include <iomanip>
 
 #include <Eigen/Dense>  // Eigen のベクトルと行列のため
+// SFMLのグラフィックス関連ヘッダをインクルード
+#include <SFML/Graphics.hpp>
 
 using Vec2 = Eigen::Vector2d;
 using Mat2 = Eigen::Matrix2d;
@@ -199,33 +198,61 @@ void init_particles() {
 
 // メインシミュレーターループ
 int main() {
+    // ウィンドウサイズを定義
+    const unsigned int window_width = 800;
+    const unsigned int window_height = 800;
+
+    // SFMLのウィンドウを作成
+    // sf::Style::Close で閉じるボタンのみを有効にする
+    sf::RenderWindow window(sf::VideoMode({window_width, window_height}), "MPM Simulation (C++ & SFML)", sf::Style::Close);
+    // フレームレートを60に制限
+    window.setFramerateLimit(60);
+
     std::cout << "Simple MPM Cpp シミュレーションを開始します..." << std::endl;
     std::cout << std::fixed << std::setprecision(5);    // doubleの出力精度を設定
 
     init_particles();
 
-    const int num_frames_to_simulate = 200; // シミュレートする「フレーム」数
-    const int substeps_per_frame = 50;  // Taichiの "for s in range(50): substep()" に対応
+    // 粒子を描画するための円形シェイプを一つ作成（効率化のため再利用する）
+    sf::CircleShape particle_shape(2.0f);   // 半径 2 ピクセルの円
+    particle_shape.setFillColor(sf::Color(0x06, 0x85, 0x87));   // Taichiのサンプルに近い色
 
-    for (int frame = 0; frame < num_frames_to_simulate; ++frame) {
-        for (int s = 0; s < substeps_per_frame; ++ s) {
+    // メインのGUIループ
+    while (window.isOpen()) {
+        // イベント処理
+        while (const auto event = window.pollEvent()) {
+            // ウェンドウの閉じるボタンが押されたらループを終了する
+            if (event -> is<sf::Event::Closed>()) {
+                window.close();
+            }
+        }
+
+        // シミュレーションの更新
+        for (int s = 0; s < 50; ++s) {
             substep();
         }
 
-        // オプション: 数フレームごとに幾つかの粒子位置や統計情報を表示
-        if (frame % 1 == 0) {
-            // 1フレームごとに
-            double total_kinetic_energy = 0.0;
-            for (int p = 0; p < n_particles; ++p){
-                total_kinetic_energy += 0.5 * p_mass * particle_v[p].squaredNorm();
-            }
-            std::cout << "フレーム " << frame << ": 粒子0 位置: ("
-                      << particle_x[0].x() << ", " << particle_x[0].y() << "), "
-                      << "総運動エネルギー: " << total_kinetic_energy <<  std::endl;
+        // 描画処理
+        // 1. ウィンドウをクリア（背景色）
+        window.clear(sf::Color(0, 0, 0));
+
+        // 2. 全ての粒子を描画
+        for (const auto& p_pos : particle_x) {
+            // シミュレーション座標 (0.0-1.0) をウィンドウ座標（ピクセル）に変換
+            // シミュレーションではy軸が上向き、SGMLではy軸が下向きなので、yを反転させる
+            float screen_x = p_pos.x() * window_width;
+            float screen_y = (1.0 - p_pos.y()) * window_height;
+
+            // 円の位置を設定
+            particle_shape.setPosition({screen_x, screen_y});
+
+            // ウィンドウに円を描画
+            window.draw(particle_shape);
         }
+
+        // 3. 描画内容を画面に表示
+        window.display();
     }
-
     std::cout << "シミュレーションが終了しました。" << std::endl;
-
     return 0;
 }

@@ -1,14 +1,22 @@
-cmake_minimum_required(VERSION 3.31)
+cmake_minimum_required(VERSION 3.21)
 project(simple-mpm-cpp)
 
 set(CMAKE_CXX_STANDARD 20)
 
+# Eigen3 を検索
 find_package(Eigen3 REQUIRED)
 
-add_executable(simple-mpm-cpp main.cpp)
+# SFML 3.0以上を検索
+find_package(SFML 3.0 REQUIRED COMPONENTS Graphics Window System)
 
-# Eigen を実行ファイルにリンクする
-target_include_directories(simple-mpm-cpp PRIVATE ${EIGEN3_INCLUDE_DIR})
+add_executable(${PROJECT_NAME} main.cpp)
 
-message(STATUS "Eigen3 include directory: ${EIGEN3_INCLUDE_DIR}")
-message(STATUS "Eigen3 version: ${EIGEN3_VERSION_STRING}")
+# ライブラリをリンク
+target_include_directories(${PROJECT_NAME} PRIVATE ${EIGEN3_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME}
+        PRIVATE
+            Eigen3::Eigen
+            SFML::Graphics
+)
+
+message(STATUS "Found SFML version: ${SFML_VERSION}")
